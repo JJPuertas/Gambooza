@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Gambooza – Conteo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; }
+    .card { border:1px solid #ddd; border-radius:12px; padding:16px; margin:12px 0; }
+    .btn { padding:8px 12px; border:1px solid #333; border-radius:8px; background:#fff; cursor:pointer; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .counts { display:flex; gap:12px; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid #999; font-size:12px; }
+  </style>
+</head>
+<body>
+  <h1>Gambooza · Conteo por grifo</h1>
+
+  <div class="card">
+    <h3>1) Subir vídeo</h3>
+    <form id="uploadForm">
+      <input type="file" name="file" accept="video/*" required />
+      <button class="btn" type="submit">Subir</button>
+    </form>
+    <p id="uploadStatus"></p>
+  </div>
+
+  <div class="card" id="processCard" style="display:none;">
+    <h3>2) Procesar</h3>
+    <button class="btn" id="processBtn">Procesar vídeo</button>
+    <span class="badge" id="statusBadge">pending</span>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none;">
+    <h3>3) Resultado</h3>
+    <div class="counts">
+      <div>Grifo A: <strong id="countA">0</strong></div>
+      <div>Grifo B: <strong id="countB">0</strong></div>
+      <div>Total: <strong id="countTotal">0</strong></div>
+    </div>
+  </div>
+
+  <script>
+    let videoId = null;
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const res = await fetch('/videos', { method:'POST', body: formData });
+      const data = await res.json();
+      if(data.id){
+        videoId = data.id;
+        document.getElementById('uploadStatus').textContent = 'Vídeo subido. ID: ' + videoId;
+        document.getElementById('processCard').style.display = 'block';
+      } else {
+        document.getElementById('uploadStatus').textContent = 'Error al subir.';
+      }
+    });
+
+    document.getElementById('processBtn').addEventListener('click', async () => {
+      if(!videoId) return;
+      document.getElementById('statusBadge').textContent = 'running';
+      document.getElementById('processBtn').disabled = true;
+
+      const res = await fetch(`/videos/${videoId}/process`, { method:'POST' });
+      const data = await res.json();
+      if(data.status === 'done'){
+        await refresh();
+      } else {
+        document.getElementById('statusBadge').textContent = 'error';
+      }
+    });
+
+    async function refresh(){
+      const res = await fetch(`/videos/${videoId}`);
+      const data = await res.json();
+      document.getElementById('statusBadge').textContent = data.status;
+      if(data.status === 'done'){
+        document.getElementById('resultCard').style.display = 'block';
+        document.getElementById('countA').textContent = data.counts.A;
+        document.getElementById('countB').textContent = data.counts.B;
+        document.getElementById('countTotal').textContent = data.counts.total;
+      }
+    }
+  </script>
+</body>
+</html>
