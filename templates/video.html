@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Gambooza · Conteo de tiradas A/B</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#121923;
+      --card-2:#0f151e;
+      --txt:#e9eef5;
+      --muted:#9fb0c7;
+      --brand:#5dd0ff;
+      --brand-2:#3eaef9;
+      --ok:#2ecc71;
+      --warn:#f1c40f;
+      --err:#ff6b6b;
+      --border:#1e2a38;
+      --chip:#162131;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background: radial-gradient(1200px 800px at 20% -10%, #132234 0, transparent 60%),
+                        radial-gradient(900px 700px at 110% 10%, #142033 0, transparent 60%),
+                        var(--bg);
+      color:var(--txt); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      min-height:100svh; display:flex; flex-direction:column;
+    }
+    header{
+      position:sticky; top:0; z-index:10; backdrop-filter:saturate(140%) blur(8px);
+      background:linear-gradient(180deg, rgba(15,22,33,.85), rgba(15,22,33,.6));
+      border-bottom:1px solid var(--border);
+    }
+    .wrap{max-width:1024px;margin:0 auto;padding:16px 20px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:36px;height:36px;border-radius:10px;
+      background: conic-gradient(from 210deg, var(--brand), var(--brand-2) 60%, #7ef3ff);
+      box-shadow: 0 0 0 2px #193146 inset, 0 6px 24px rgba(61,179,255,.35);
+    }
+    h1{font-size:20px;margin:0}
+    main{flex:1}
+    .grid{display:grid; gap:16px; grid-template-columns: 1.15fr .85fr}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background:linear-gradient(180deg, var(--card), var(--card-2));
+      border:1px solid var(--border); border-radius:16px; padding:18px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.02);
+    }
+    .card h3{margin:0 0 12px 0; font-size:16px; letter-spacing:.2px}
+    .muted{color:var(--muted)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+
+    /* Dropzone */
+    .drop{
+      display:flex; align-items:center; justify-content:center; flex-direction:column;
+      gap:10px; padding:18px; border:1px dashed #284058; border-radius:14px;
+      background: #0e1622;
+      transition: all .2s ease;
+      cursor:pointer;
+    }
+    .drop:hover{border-color:#2b7ab6; box-shadow:0 0 0 3px rgba(61,179,255,.12) inset}
+    .drop.drag{background:#0f1d2d; border-color: var(--brand)}
+    .small{font-size:12px}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border);
+      background:var(--chip); padding:6px 10px; border-radius:999px; font-size:12px; color:var(--muted)
+    }
+    .btn{
+      padding:10px 14px; border:1px solid #2a3a50; background: linear-gradient(180deg,#17304a,#14253a);
+      color:var(--txt); border-radius:10px; cursor:pointer; font-weight:600; letter-spacing:.2px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.06);
+      transition:.15s transform ease, .15s opacity ease;
+    }
+    .btn:hover{transform: translateY(-1px)}
+    .btn:disabled{opacity:.5; cursor:not-allowed; transform:none}
+    .btn.sec{background:linear-gradient(180deg,#101b2a,#0e1622); border-color:#273548}
+
+    .status{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid var(--border)}
+    .s-pending{background:#1a2331; color:#b7c6db}
+    .s-running{background:#1a2a1f; color:#c6f6d5; border-color:#234a33}
+    .s-done{background:#122a22; color:#aaf0c7; border-color:#1c6d4a}
+    .s-error{background:#2a1418; color:#ffc7ce; border-color:#6d1c2a}
+
+    .counts{display:flex; gap:10px; flex-wrap:wrap}
+    .kpi{flex:1; min-width:140px; padding:14px; border-radius:12px; background:#0f1722; border:1px solid var(--border)}
+    .kpi h4{margin:0 0 4px 0; font-size:12px; color:var(--muted); font-weight:600}
+    .kpi .v{font-size:28px; font-weight:800}
+
+    .progress{height:8px; border-radius:999px; background:#122033; overflow:hidden; border:1px solid #1a2b41}
+    .bar{height:100%; width:0%; background:linear-gradient(90deg, var(--brand), var(--brand-2)); transition: width .25s ease}
+
+    .err{background:#31141a; border:1px solid #5e2232; color:#ffc7ce; padding:10px 12px; border-radius:10px; font-size:14px}
+    .ok{background:#142a1f; border:1px solid #23563e; color:#acf0c9; padding:10px 12px; border-radius:10px; font-size:14px}
+
+    table{width:100%; border-collapse:collapse; background:#0f1722; border:1px solid var(--border); border-radius:12px; overflow:hidden}
+    th,td{padding:10px 12px; border-bottom:1px solid #1a2b41; text-align:left; font-size:14px}
+    th{background:#0f1b2b; color:#b1c3da; letter-spacing:.3px; font-weight:700}
+    tr:last-child td{border-bottom:none}
+
+    footer{border-top:1px solid var(--border); color:var(--muted); font-size:12px}
+    code{background:#0d1520;border:1px solid #243043;padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Gambooza · Conteo de tiradas por grifo</h1>
+        <div class="small muted">Sube un vídeo, procesa en segundo plano y obtén A/B/Total.</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" style="padding-top:18px;padding-bottom:22px">
+    <div class="grid">
+      <!-- Columna izquierda: flujo principal -->
+      <section class="card">
+        <h3>1) Subir vídeo</h3>
+        <div id="drop" class="drop" tabindex="0" role="button" aria-label="Zona para arrastrar o seleccionar vídeo">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 16V8m0 0l-3 3m3-3l3 3" stroke="#8fc3ff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="3" y="16" width="18" height="5" rx="2" stroke="#2b5e9a" fill="none"></rect>
+          </svg>
+          <div style="text-align:center">
+            <div style="font-weight:700">Arrastra tu vídeo aquí</div>
+            <div class="small muted">o haz clic para seleccionar (mp4/mov). Tamaños grandes tardan más.</div>
+          </div>
+          <input id="fileInput" type="file" accept="video/*" style="display:none" />
+        </div>
+
+        <div style="height:10px"></div>
+        <div id="uploadInfo" class="row muted small" style="display:none"></div>
+
+        <div style="height:6px"></div>
+        <div class="progress" aria-hidden="true"><div id="prog" class="bar"></div></div>
+
+        <div style="height:16px"></div>
+        <div class="row">
+          <button id="processBtn" class="btn" disabled>Procesar vídeo</button>
+          <span id="statusBadge" class="status s-pending" style="display:none">pending</span>
+          <span id="procError" class="err" style="display:none"></span>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:18px 0">
+
+        <h3>2) Resultado</h3>
+        <div id="resultCard" style="display:none">
+          <div class="counts">
+            <div class="kpi">
+              <h4>Grifo A</h4>
+              <div id="countA" class="v">0</div>
+            </div>
+            <div class="kpi">
+              <h4>Grifo B</h4>
+              <div id="countB" class="v">0</div>
+            </div>
+            <div class="kpi">
+              <h4>Total</h4>
+              <div id="countTotal" class="v">0</div>
+            </div>
+          </div>
+          <div id="okMsg" class="ok" style="margin-top:12px; display:none">Procesado completado correctamente.</div>
+        </div>
+      </section>
+
+      <!-- Columna derecha: estado y estadísticas -->
+      <aside class="card">
+        <h3>Estado & Estadísticas</h3>
+        <div class="row">
+          <span class="pill"><strong>ID:</strong> <span id="vidLabel" class="muted">—</span></span>
+          <span class="pill"><strong>Peso:</strong> <span id="sizeLabel" class="muted">—</span></span>
+          <span class="pill"><strong>Tipo:</strong> <span id="typeLabel" class="muted">—</span></span>
+        </div>
+
+        <div style="height:14px"></div>
+        <div class="small muted">Consejos:</div>
+        <ul class="small" style="margin:6px 0 14px 18px; line-height:1.55">
+          <li>Evita HEVC si puedes; el sistema convierte automáticamente si es necesario.</li>
+          <li>Los ROIs están calibrados; si tu cámara cambia, avísalo en <code>counter_real.py</code>.</li>
+          <li>Mientras el estado sea <em>running</em>, este panel hará polling cada 1.2s.</li>
+        </ul>
+
+        <h3 style="margin-top:6px">Estadísticas (por día)</h3>
+        <div id="statsWrap" class="muted small" style="margin-top:8px">Cargando estadísticas…</div>
+        <div style="height:8px"></div>
+        <table id="statsTable" style="display:none">
+          <thead><tr><th>Fecha</th><th>A</th><th>B</th><th>Total</th></tr></thead>
+          <tbody id="statsBody"></tbody>
+        </table>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="wrap" style="padding:14px 20px">
+    Gambooza · <span class="muted">Procesamiento offline · FastAPI + SQLite</span>
+  </footer>
+
+  <script>
+    // ---------- Estado ----------
+    let videoId = null;
+    let pollTimer = null;
+
+    // ---------- Utilidades ----------
+    const $ = sel => document.querySelector(sel);
+    function fmtBytes(x){
+      if(!x && x!==0) return "—";
+      const u=['B','KB','MB','GB']; let i=0; while(x>=1024 && i<u.length-1){x/=1024;i++}
+      return `${x.toFixed(i?1:0)} ${u[i]}`;
+    }
+    function setBadge(status){
+      const el = $("#statusBadge");
+      el.style.display = "inline-flex";
+      el.textContent = status;
+      el.className = "status " + (
+        status === "done" ? "s-done" :
+        status === "running" ? "s-running" :
+        status === "error" ? "s-error" : "s-pending"
+      );
+    }
+    function setError(msg){
+      const el = $("#procError");
+      if(!msg){ el.style.display="none"; el.textContent=""; return; }
+      el.style.display="inline-block"; el.textContent = msg;
+    }
+    function setProgress(p){ $("#prog").style.width = `${Math.max(0, Math.min(100, p))}%`; }
+
+    function disableProcess(v){ $("#processBtn").disabled = v; }
+
+    function updateResult(counts){
+      $("#resultCard").style.display = "block";
+      $("#countA").textContent = counts.A ?? 0;
+      $("#countB").textContent = counts.B ?? 0;
+      $("#countTotal").textContent = counts.total ?? ((counts.A||0)+(counts.B||0));
+    }
+
+    // ---------- Dropzone / Subida ----------
+    const drop = $("#drop");
+    drop.addEventListener("click", ()=> $("#fileInput").click());
+    drop.addEventListener("dragover", e => {e.preventDefault(); drop.classList.add("drag");});
+    drop.addEventListener("dragleave", ()=> drop.classList.remove("drag"));
+    drop.addEventListener("drop", e => {
+      e.preventDefault(); drop.classList.remove("drag");
+      const f = e.dataTransfer.files?.[0]; if(f) handleFile(f);
+    });
+    $("#fileInput").addEventListener("change", e => {
+      const f = e.target.files?.[0]; if(f) handleFile(f);
+    });
+
+    async function handleFile(file){
+      // UI info
+      $("#uploadInfo").style.display = "flex";
+      $("#uploadInfo").innerHTML = `
+        <span class="pill"><strong>Archivo:</strong> <span class="muted">${file.name}</span></span>
+        <span class="pill"><strong>Tamaño:</strong> <span class="muted">${fmtBytes(file.size)}</span></span>
+        <span class="pill"><strong>Tipo:</strong> <span class="muted">${file.type || 'desconocido'}</span></span>
+      `;
+      $("#sizeLabel").textContent = fmtBytes(file.size);
+      $("#typeLabel").textContent = file.type || "—";
+      setProgress(10);
+      setError("");
+      $("#okMsg").style.display = "none";
+      $("#resultCard").style.display = "none";
+      setBadge("pending");
+      disableProcess(true);
+
+      // Subida
+      const form = new FormData();
+      form.append("file", file);
+      try{
+        const res = await fetch("/videos", {method:"POST", body:form});
+        const data = await res.json();
+        if(data?.id){
+          videoId = data.id;
+          $("#vidLabel").textContent = videoId;
+          setProgress(35);
+          disableProcess(false);
+          $("#statusBadge").style.display = "inline-flex";
+        }else{
+          throw new Error("Respuesta inválida al subir.");
+        }
+      }catch(e){
+        setError("Error al subir el vídeo. Inténtalo de nuevo.");
+        setProgress(0);
+        return;
+      }
+      // un pequeño efecto visual
+      setTimeout(()=> setProgress(45), 250);
+      // refresca estadísticas en segundo plano
+      loadStats();
+    }
+
+    // ---------- Procesar ----------
+    $("#processBtn").addEventListener("click", async ()=>{
+      if(!videoId) return;
+      setError(""); setBadge("running"); disableProcess(true); setProgress(55);
+      try{
+        const res = await fetch(`/videos/${videoId}/process`, {method:"POST"});
+        const data = await res.json();
+        // siempre iniciamos polling; el backend devuelve running
+        startPolling();
+      }catch(e){
+        setBadge("error"); setError("No se pudo iniciar el procesamiento."); disableProcess(false);
+      }
+    });
+
+    function startPolling(){
+      if(pollTimer) clearInterval(pollTimer);
+      let visualProgress = 60;
+      setProgress(visualProgress);
+
+      pollTimer = setInterval(async ()=>{
+        try{
+          const r = await fetch(`/videos/${videoId}`);
+          const data = await r.json();
+
+          if(data?.status){
+            setBadge(data.status);
+            if(data.status === "running"){
+              
+              visualProgress = Math.min(visualProgress + 6, 92);
+              setProgress(visualProgress);
+            }
+            if(data.status === "done"){
+              updateResult(data.counts || {});
+              setProgress(100);
+              $("#okMsg").style.display = "block";
+              clearInterval(pollTimer); pollTimer = null;
+              disableProcess(false);
+            }else if(data.status === "error"){
+              setError(data.error || "Error desconocido durante el procesamiento.");
+              setProgress(0);
+              clearInterval(pollTimer); pollTimer = null;
+              disableProcess(false);
+            }
+          }
+        }catch(e){
+          // ignoramos fallos intermitentes de red
+        }
+      }, 1200);
+    }
+
+    // ---------- Estadísticas ----------
+    async function loadStats(){
+      try{
+        const res = await fetch("/stats");
+        const data = await res.json();
+        const body = $("#statsBody");
+        body.innerHTML = "";
+        const days = (data && data.days) ? data.days : [];
+        if(!days.length){
+          $("#statsWrap").style.display="block";
+          $("#statsWrap").textContent = "No hay datos todavía.";
+          $("#statsTable").style.display="none";
+          return;
+        }
+        $("#statsWrap").style.display="none";
+        $("#statsTable").style.display="table";
+        for(const d of days){
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td>${d.date}</td><td>${d.A}</td><td>${d.B}</td><td><strong>${d.total}</strong></td>`;
+          body.appendChild(tr);
+        }
+      }catch(e){
+        $("#statsWrap").style.display="block";
+        $("#statsWrap").textContent = "No se pudieron cargar las estadísticas.";
+        $("#statsTable").style.display="none";
+      }
+    }
+
+    // Cargar stats al entrar
+    loadStats();
+  </script>
+</body>
+</html>
