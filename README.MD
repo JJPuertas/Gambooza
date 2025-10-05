@@ -1,4 +1,4 @@
-# Gambooza · Conteo de tiradas de cerveza A/B
+# Gambooza · Conteo de tiradas de cerveza A/B - V 1.0.0
 
 Descripción
 Aplicación para el caso práctico técnico de Gambooza. Detecta cuántas cervezas se sirven desde dos grifos (A y B) en un vídeo con cámara fija. Usa FastAPI, OpenCV y SQLite. Interfaz web incluida; el procesamiento corre en background.
