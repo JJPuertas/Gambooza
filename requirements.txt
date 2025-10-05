@@ -1,0 +1,25 @@
+# Framework principal
+fastapi==0.115.0
+uvicorn==0.30.6
+
+# Plantillas HTML
+jinja2==3.1.4
+
+# Procesamiento de vídeo
+opencv-python-headless==4.10.0.84
+numpy==1.26.4
+
+# Base de datos (SQLite + ORM)
+sqlmodel==0.0.19
+SQLAlchemy==2.0.32
+
+# Manejo de concurrencia
+anyio==4.3.0
+
+# Otras dependencias utilizadas por FastAPI
+starlette==0.37.2
+pydantic==2.7.1
+pydantic-core==2.18.2
+
+# Recomendado para el autoreload (modo desarrollo)
+watchdog==4.0.1
