@@ -26,24 +26,48 @@ def _roi_rect(frame_shape, roi_pct):
     return (int(x*W), int(y*H), int(w*W), int(h*H))
 
 def _iter_frames(path, target_w=640, target_fps=12):
+    """
+    Iterador que devuelve frames redimensionados del vídeo a target_w y target_fps.
+    Usa FFmpeg como backend para evitar errores con HEVC/H.265.
+    """
+    import cv2, numpy as np
+
+    # (Opcional) Silenciar logs verbosos de OpenCV
+    try:
+        cv2.utils.logging.setLogLevel(cv2.utils.logging.LOG_LEVEL_SILENT)
+    except Exception:
+        pass
+
     cap = cv2.VideoCapture(path, cv2.CAP_FFMPEG)
     if not cap.isOpened():
-        raise RuntimeError("No se pudo abrir el vídeo")
-    src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        raise RuntimeError(f"No se pudo abrir el vídeo: {path}")
+
+    # Lee FPS del vídeo; si no existe o es absurdo, fuerza a 25
+    src_fps = cap.get(cv2.CAP_PROP_FPS) or 0.0
+    if not (5.0 <= src_fps <= 120.0):
+        src_fps = 25.0
+
+    # Calcula salto de frames para aproximar el FPS deseado
     step = max(int(round(src_fps / target_fps)), 1)
     idx = 0
+
     while True:
         ret, frame = cap.read()
         if not ret:
             break
+
+        # Submuestreo temporal
         if idx % step == 0:
             h, w = frame.shape[:2]
             if w != target_w:
                 scale = target_w / w
-                frame = cv2.resize(frame, (target_w, int(h*scale)))
+                frame = cv2.resize(frame, (target_w, int(h * scale)))
             yield frame
+
         idx += 1
+
     cap.release()
+
 
 def _signal_from_roi(frames, roi_pct):
     prev = None

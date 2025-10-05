@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 import uuid, os
 # from app.counter_stub import count_beers
 from app.counter_real import count_beers
+from app.transcode import transcode_to_h264
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -22,10 +23,34 @@ def home(request: Request):
 async def upload_video(file: UploadFile = File(...)):
     vid = str(uuid.uuid4())
     ext = os.path.splitext(file.filename)[1].lower() or ".mp4"
-    path = os.path.join(STORAGE_DIR, f"{vid}{ext}")
-    with open(path, "wb") as f:
-        f.write(await file.read())
-    DB[vid] = {"filename": path, "status": "pending", "counts": {"A":0,"B":0,"total":0}}
+    raw_path = os.path.join(STORAGE_DIR, f"{vid}_raw{ext}")
+    # Escribir por chunks (evita archivos truncados)
+    with open(raw_path, "wb") as f:
+        while True:
+            chunk = await file.read(1024 * 1024)  # 1 MB
+            if not chunk:
+                break
+            f.write(chunk)
+
+    # ★ Convertir SIEMPRE a H.264 al subir
+    try:
+        safe_path = transcode_to_h264(raw_path)
+    except Exception as e:
+        # Limpieza y error claro
+        try:
+            os.remove(raw_path)
+        except FileNotFoundError:
+            pass
+        return JSONResponse({"error": f"Transcodificación falló: {e}"}, status_code=400)
+
+    # (Opcional) borrar el original para ahorrar espacio
+    try:
+        os.remove(raw_path)
+    except FileNotFoundError:
+        pass
+
+    # Guardamos directamente la ruta H.264
+    DB[vid] = {"filename": safe_path, "status": "pending", "counts": {"A":0,"B":0,"total":0}}
     return {"id": vid, "status": "pending"}
 
 @app.post("/videos/{vid}/process")
