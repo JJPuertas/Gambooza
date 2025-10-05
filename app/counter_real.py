@@ -17,8 +17,8 @@ class Params:
 
 # ROIs por defecto (porcentuales sobre ancho/alto redimensionados)
 # Ajusta si tu vídeo sitúa los grifos en otro sitio.
-ROI_A = (0.20, 0.25, 0.20, 0.50)  # x, y, w, h en %
-ROI_B = (0.60, 0.25, 0.20, 0.50)
+ROI_A = (0.506, 0.328, 0.039, 0.269)  # Grifo A (izquierda del conjunto)
+ROI_B = (0.554, 0.328, 0.039, 0.269)  # Grifo B (derecha del conjunto)
 
 def _roi_rect(frame_shape, roi_pct):
     H, W = frame_shape[:2]
@@ -26,7 +26,7 @@ def _roi_rect(frame_shape, roi_pct):
     return (int(x*W), int(y*H), int(w*W), int(h*H))
 
 def _iter_frames(path, target_w=640, target_fps=12):
-    cap = cv2.VideoCapture(path)
+    cap = cv2.VideoCapture(path, cv2.CAP_FFMPEG)
     if not cap.isOpened():
         raise RuntimeError("No se pudo abrir el vídeo")
     src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
