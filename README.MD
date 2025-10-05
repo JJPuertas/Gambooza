@@ -17,7 +17,7 @@ Dependencias: archivo requirements.txt
 
 ## Instalación
 a) Clonar o descargar el proyecto
-git clone https://github.com/<TU_USUARIO>/Gambooza.git
+git clone https://github.com/JJPuertas/Gambooza.git
 cd Gambooza
 
 b) Crear y activar entorno virtual
