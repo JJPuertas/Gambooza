@@ -3,7 +3,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uuid, os
-from app.counter_stub import count_beers
+# from app.counter_stub import count_beers
+from app.counter_real import count_beers
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
