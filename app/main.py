@@ -18,6 +18,8 @@ from app.db import init_db, get_session, Video, Event
 # -------------------------------------------------------------------
 # Configuración básica
 # -------------------------------------------------------------------
+os.makedirs("static", exist_ok=True) #  crea si no existe
+os.makedirs("app/storage", exist_ok=True) #  crea si no existe
 app = FastAPI(title="Gambooza - Conteo de tiradas A/B")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
