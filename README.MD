@@ -113,7 +113,18 @@ Causa: Varias instancias usando la base a la vez
 Solución: Cerrar instancias previas o esperar a que termine el proceso en curso
 
 # Ejecución rápida (resumen)
-python -m venv .venv && .venv\Scripts\activate
+python -m venv .venv 
+
+ .venv\Scripts\activate
+
+
 pip install -r requirements.txt
+
+
 uvicorn app.main:app --port 8000
+
+
 Abrir: http://localhost:8000
+
+
+Si aparece un error de python-multipart añadir este comando y volver a abrir: pip install python-multipart  
